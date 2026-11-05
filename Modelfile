@@ -1,0 +1,11 @@
+FROM ./Qwen2.5-Coder-7B-Instruct.Q4_K_M.gguf
+
+TEMPLATE """{{- if .System }}<|im_start|>system
+{{ .System }}<|im_end|>
+{{ end }}<|im_start|>user
+{{ .Prompt }}<|im_end|>
+<|im_start|>assistant
+"""
+PARAMETER stop "<|im_end|>"
+PARAMETER temperature 0.2
+SYSTEM "You are a coding assistant for the ACWA project. Stack: ASP.NET Core Web API (C#) and an Angular client that uses the legacy @angular/http service style. Follow the project's conventions."

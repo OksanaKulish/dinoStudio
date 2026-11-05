@@ -1,0 +1,22 @@
+:host {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+	width: 100%;
+	color: #263d36;
+	font-size: 13px;
+}
+
+header { margin-bottom: 10px; }
+label { margin-bottom: 6px; }
+input { box-sizing: border-box; max-width: 100%; font: inherit; }
+input::file-selector-button { margin-right: 8px; padding: 6px 9px; border: 1px solid #80988b; border-radius: 3px; background: #e5eee7; color: #183728; cursor: pointer; }
+.table-meta { display: flex; flex-direction: column; gap: 4px; margin: 12px 0 8px; overflow-wrap: anywhere; }
+.table-meta span { color: #53675b; font-size: 12px; }
+.table-scroll { flex: 1; min-height: 80px; overflow: auto; border: 1px solid #cfddd2; background: #fff; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+th, td { padding: 6px 8px; border-bottom: 1px solid #d5ded8; white-space: nowrap; }
+th { position: sticky; top: 0; background: #e5eee7; }
+.error { color: #a12323; overflow-wrap: anywhere; }
+.warning { color: #795a0c; }

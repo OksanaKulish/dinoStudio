@@ -1,0 +1,295 @@
+<div class="canvas-workspace">
+<f-flow fInitialView fDraggable (fLoaded)="loaded()">
+	<f-canvas fZoom (fCanvasChange)="canvasChanged($event)">
+		<ng-container ngProjectAs="[fConnections]">
+		@for (connection of connections(); track connection.id) {
+		<f-connection [fConnectionId]="connection.id" [fSourceId]="connection.source + '-out'"
+			[fTargetId]="connection.target + '-in'" [fType]="connection.id === 'card-video' ? 'segment' : 'bezier'" [fReassignDisabled]="true">
+			<button type="button" class="connection-remove" fConnectionContent fDragBlocker [position]="0.5"
+				[attr.aria-label]="'Remove connection from ' + connection.source + ' to ' + connection.target"
+				[title]="'Remove connection from ' + connection.source + ' to ' + connection.target"
+				(click)="$event.stopPropagation(); removeConnection(connection.id)">×</button>
+		</f-connection>
+		}
+		</ng-container>
+
+		<ng-container ngProjectAs="[fNodes]">
+		@if (!closedInitialNodes().has('folder')) {
+		<div class="simple-node folder-node" fNode fDragHandle (click)="selectNode('folder')"
+			[class.selected-node]="selectedNode() === 'folder'" [class.connection-target]="connectingFrom() !== null && connectingFrom() !== 'folder'"
+     [fNodePosition]="{ x: -300, y: 200 }"
+     fNodeOutput fOutputId="fOutput1" fOutputConnectableSide="right">
+	<span class="graph-port graph-port-in" fConnector fConnectorType="target" fConnectorId="folder-in" fConnectorConnectableSide="left"></span>
+	<span class="graph-port graph-port-out" fConnector fConnectorType="source" fConnectorId="folder-out" fConnectorConnectableSide="right"></span>
+	<div class="connector-panel connector-panel-in" fDragBlocker><button type="button" title="Connect to folder input" aria-label="Connect to folder input"
+		[disabled]="!connectingFrom() || connectingFrom() === 'folder'" (click)="$event.stopPropagation(); finishConnection('folder')">+</button></div>
+	<div class="connector-panel connector-panel-out" fDragBlocker><button type="button" title="Start from folder output" aria-label="Start from folder output"
+		[class.active]="connectingFrom() === 'folder'" (click)="$event.stopPropagation(); startConnection('folder')">+</button></div>
+	<button type="button" class="node-close" fDragBlocker aria-label="Close folder node" title="Close folder node"
+		(click)="$event.stopPropagation(); closeInitialNode('folder')">×</button>
+
+	<button mat-stroked-button fDragBlocker (click)="fileInput.click()">Open file</button>
+	<button mat-stroked-button fDragBlocker (click)="pickFolder(fb)">
+    {{ folderName() ? 'Change folder' : 'Open folder' }}
+  </button>
+	@if (folderName() || selectedName()) {
+    <button mat-button fDragBlocker (click)="clearFolder()">Clear</button>
+  }
+
+	<input #fileInput type="file" hidden (change)="onFilePicked($event)" />
+  <input #fb type="file" hidden webkitdirectory (change)="onFallbackPicked($event)" />
+
+  @if (loading()) { <p>Reading…</p> }
+
+  @if (folderName()) {
+    <div class="tree-box" fDragBlocker>
+      <strong>{{ folderName() }}</strong>
+			<app-folder-tree [nodes]="tree()" (fileOpened)="openFile($event)" />
+    </div>
+  }
+	@if (selectedName()) {
+		<div class="file-preview" fDragBlocker>
+			<strong>{{ selectedName() }}</strong>
+			@if (selectedText() !== null) {
+				<pre>{{ selectedText() }}</pre>
+			} @else if (selectedImage() && selectedUrl()) {
+				<img [src]="selectedUrl()" [alt]="selectedName()" />
+			}
+			@if (selectedUrl()) {
+				<a [href]="selectedUrl()" target="_blank" rel="noopener noreferrer">Open in new tab</a>
+			}
+		</div>
+	}
+</div>
+		}
+		</ng-container>
+
+		<ng-container ngProjectAs="[fNodes]">
+		@if (!closedInitialNodes().has('terminal')) {
+		<div class="terminal-node" fNode [fNodePosition]="{ x: 360, y: -280 }" (click)="selectNode('terminal')"
+			[class.selected-node]="selectedNode() === 'terminal'" [class.connection-target]="connectingFrom() !== null && connectingFrom() !== 'terminal'">
+			<span class="graph-port graph-port-in" fConnector fConnectorType="target" fConnectorId="terminal-in" fConnectorConnectableSide="left"></span>
+			<span class="graph-port graph-port-out" fConnector fConnectorType="source" fConnectorId="terminal-out" fConnectorConnectableSide="right"></span>
+			<div class="connector-panel connector-panel-in" fDragBlocker><button type="button" title="Connect to terminal input" aria-label="Connect to terminal input"
+				[disabled]="!connectingFrom() || connectingFrom() === 'terminal'" (click)="$event.stopPropagation(); finishConnection('terminal')">+</button></div>
+			<div class="connector-panel connector-panel-out" fDragBlocker><button type="button" title="Start from terminal output" aria-label="Start from terminal output"
+				[class.active]="connectingFrom() === 'terminal'" (click)="$event.stopPropagation(); startConnection('terminal')">+</button></div>
+			<div class="terminal-drag-handle" fDragHandle title="Drag terminal" aria-label="Drag terminal"><span aria-hidden="true">⋮⋮</span> WSL terminal</div>
+			<button type="button" class="node-close" fDragBlocker aria-label="Close terminal node" title="Close terminal node"
+				(click)="$event.stopPropagation(); closeInitialNode('terminal')">×</button>
+			<app-wsl-terminal fDragBlocker />
+		</div>
+		}
+
+		@if (!closedInitialNodes().has('notebook')) {
+		<div class="notebook-node" fNode [fNodePosition]="{ x: 760, y: 120 }" (click)="selectNode('notebook')"
+			[class.selected-node]="selectedNode() === 'notebook'" [class.connection-target]="connectingFrom() !== null && connectingFrom() !== 'notebook'">
+			<span class="graph-port graph-port-in" fConnector fConnectorType="target" fConnectorId="notebook-in" fConnectorConnectableSide="left"></span>
+			<span class="graph-port graph-port-out" fConnector fConnectorType="source" fConnectorId="notebook-out" fConnectorConnectableSide="right"></span>
+			<div class="connector-panel connector-panel-in" fDragBlocker><button type="button" title="Connect to notebook input" aria-label="Connect to notebook input"
+				[disabled]="!connectingFrom() || connectingFrom() === 'notebook'" (click)="$event.stopPropagation(); finishConnection('notebook')">+</button></div>
+			<div class="connector-panel connector-panel-out" fDragBlocker><button type="button" title="Start from notebook output" aria-label="Start from notebook output"
+				[class.active]="connectingFrom() === 'notebook'" (click)="$event.stopPropagation(); startConnection('notebook')">+</button></div>
+			<div class="notebook-drag-handle" fDragHandle title="Drag notebook" aria-label="Drag notebook">
+				<span aria-hidden="true">⋮⋮</span> Notebook
+			</div>
+			<button type="button" class="node-close" fDragBlocker aria-label="Close notebook node" title="Close notebook node"
+				(click)="$event.stopPropagation(); closeInitialNode('notebook')">×</button>
+			<app-notebook fDragBlocker />
+			<div class="notebook-resize-handle" fResizeHandle fResizeHandleType="right-bottom"
+				title="Resize notebook" aria-label="Resize notebook"></div>
+		</div>
+		}
+		</ng-container>
+		<ng-container ngProjectAs="[fNodes]">
+		@for (tool of toolNodes(); track tool.id) {
+			@if (tool.kind === 'terminal') {
+				<div class="terminal-node" fNode [fNodeId]="tool.id" [fNodePosition]="tool.position"
+					(click)="selectNode(tool.id)" [class.selected-node]="selectedNode() === tool.id"
+					[class.connection-target]="connectingFrom() !== null && connectingFrom() !== tool.id">
+					<span class="graph-port graph-port-in" fConnector fConnectorType="target" [fConnectorId]="tool.id + '-in'" fConnectorConnectableSide="left"></span>
+					<span class="graph-port graph-port-out" fConnector fConnectorType="source" [fConnectorId]="tool.id + '-out'" fConnectorConnectableSide="right"></span>
+					<div class="connector-panel connector-panel-in" fDragBlocker><button type="button" [title]="'Connect to ' + tool.id + ' input'" [attr.aria-label]="'Connect to ' + tool.id + ' input'"
+						[disabled]="!connectingFrom() || connectingFrom() === tool.id" (click)="$event.stopPropagation(); finishConnection(tool.id)">+</button></div>
+					<div class="connector-panel connector-panel-out" fDragBlocker><button type="button" [title]="'Start from ' + tool.id + ' output'" [attr.aria-label]="'Start from ' + tool.id + ' output'"
+						[class.active]="connectingFrom() === tool.id" (click)="$event.stopPropagation(); startConnection(tool.id)">+</button></div>
+					<div class="terminal-drag-handle" fDragHandle title="Drag terminal" aria-label="Drag terminal"><span aria-hidden="true">⋮⋮</span> WSL terminal</div>
+					<button type="button" class="node-close" fDragBlocker aria-label="Close terminal node" title="Close terminal node"
+						(click)="$event.stopPropagation(); closeTool(tool.id)">×</button>
+					<app-wsl-terminal fDragBlocker />
+				</div>
+			} @else if (tool.kind === 'notebook') {
+				<div class="notebook-node" fNode [fNodeId]="tool.id" [fNodePosition]="tool.position"
+					(click)="selectNode(tool.id)" [class.selected-node]="selectedNode() === tool.id"
+					[class.connection-target]="connectingFrom() !== null && connectingFrom() !== tool.id">
+					<span class="graph-port graph-port-in" fConnector fConnectorType="target" [fConnectorId]="tool.id + '-in'" fConnectorConnectableSide="left"></span>
+					<span class="graph-port graph-port-out" fConnector fConnectorType="source" [fConnectorId]="tool.id + '-out'" fConnectorConnectableSide="right"></span>
+					<div class="connector-panel connector-panel-in" fDragBlocker><button type="button" [title]="'Connect to ' + tool.id + ' input'" [attr.aria-label]="'Connect to ' + tool.id + ' input'"
+						[disabled]="!connectingFrom() || connectingFrom() === tool.id" (click)="$event.stopPropagation(); finishConnection(tool.id)">+</button></div>
+					<div class="connector-panel connector-panel-out" fDragBlocker><button type="button" [title]="'Start from ' + tool.id + ' output'" [attr.aria-label]="'Start from ' + tool.id + ' output'"
+						[class.active]="connectingFrom() === tool.id" (click)="$event.stopPropagation(); startConnection(tool.id)">+</button></div>
+					<div class="notebook-drag-handle" fDragHandle title="Drag notebook" aria-label="Drag notebook">
+						<span aria-hidden="true">⋮⋮</span> Notebook
+					</div>
+					<button type="button" class="node-close" fDragBlocker aria-label="Close notebook node" title="Close notebook node"
+						(click)="$event.stopPropagation(); closeTool(tool.id)">×</button>
+					<app-notebook fDragBlocker />
+					<div class="notebook-resize-handle" fResizeHandle fResizeHandleType="right-bottom"
+						title="Resize notebook" aria-label="Resize notebook"></div>
+				</div>
+			} @else if (tool.kind === 'github') {
+				<div class="github-node" fNode [fNodeId]="tool.id" [fNodePosition]="tool.position"
+					(click)="selectNode(tool.id)" [class.selected-node]="selectedNode() === tool.id"
+					[class.connection-target]="connectingFrom() !== null && connectingFrom() !== tool.id">
+					<span class="graph-port graph-port-in" fConnector fConnectorType="target" [fConnectorId]="tool.id + '-in'" fConnectorConnectableSide="left"></span>
+					<span class="graph-port graph-port-out" fConnector fConnectorType="source" [fConnectorId]="tool.id + '-out'" fConnectorConnectableSide="right"></span>
+					<div class="connector-panel connector-panel-in" fDragBlocker><button type="button" [title]="'Connect to ' + tool.id + ' input'" [attr.aria-label]="'Connect to ' + tool.id + ' input'"
+						[disabled]="!connectingFrom() || connectingFrom() === tool.id" (click)="$event.stopPropagation(); finishConnection(tool.id)">+</button></div>
+					<div class="connector-panel connector-panel-out" fDragBlocker><button type="button" [title]="'Start from ' + tool.id + ' output'" [attr.aria-label]="'Start from ' + tool.id + ' output'"
+						[class.active]="connectingFrom() === tool.id" (click)="$event.stopPropagation(); startConnection(tool.id)">+</button></div>
+					<div class="notebook-drag-handle" fDragHandle title="Drag GitHub project" aria-label="Drag GitHub project">GitHub project</div>
+					<button type="button" class="node-close" fDragBlocker aria-label="Close GitHub project node" title="Close GitHub project node"
+						(click)="$event.stopPropagation(); closeTool(tool.id)">×</button>
+					<app-github-project fDragBlocker />
+					<div class="notebook-resize-handle" fResizeHandle fResizeHandleType="right-bottom"
+						title="Resize GitHub project" aria-label="Resize GitHub project"></div>
+				</div>
+			} @else if (tool.kind === 'ollama') {
+				<div class="ollama-node" fNode [fNodeId]="tool.id" [fNodePosition]="tool.position"
+					(click)="selectNode(tool.id)" [class.selected-node]="selectedNode() === tool.id"
+					[class.connection-target]="connectingFrom() !== null && connectingFrom() !== tool.id">
+					<span class="graph-port graph-port-in" fConnector fConnectorType="target" [fConnectorId]="tool.id + '-in'" fConnectorConnectableSide="left"></span>
+					<span class="graph-port graph-port-out" fConnector fConnectorType="source" [fConnectorId]="tool.id + '-out'" fConnectorConnectableSide="right"></span>
+					<div class="connector-panel connector-panel-in" fDragBlocker><button type="button" [title]="'Connect to ' + tool.id + ' input'" [attr.aria-label]="'Connect to ' + tool.id + ' input'"
+						[disabled]="!connectingFrom() || connectingFrom() === tool.id" (click)="$event.stopPropagation(); finishConnection(tool.id)">+</button></div>
+					<div class="connector-panel connector-panel-out" fDragBlocker><button type="button" [title]="'Start from ' + tool.id + ' output'" [attr.aria-label]="'Start from ' + tool.id + ' output'"
+						[class.active]="connectingFrom() === tool.id" (click)="$event.stopPropagation(); startConnection(tool.id)">+</button></div>
+					<div class="notebook-drag-handle" fDragHandle title="Drag Ollama" aria-label="Drag Ollama">Ollama</div>
+					<button type="button" class="node-close" fDragBlocker aria-label="Close Ollama node" title="Close Ollama node"
+						(click)="$event.stopPropagation(); closeTool(tool.id)">×</button>
+					<app-ollama fDragBlocker />
+					<div class="notebook-resize-handle" fResizeHandle fResizeHandleType="right-bottom"
+						title="Resize Ollama" aria-label="Resize Ollama"></div>
+				</div>
+			} @else if (tool.kind === 'image') {
+				<div class="image-node" fNode [fNodeId]="tool.id" [fNodePosition]="tool.position"
+					(click)="selectNode(tool.id)" [class.selected-node]="selectedNode() === tool.id"
+					[class.connection-target]="connectingFrom() !== null && connectingFrom() !== tool.id">
+					<span class="graph-port graph-port-in" fConnector fConnectorType="target" [fConnectorId]="tool.id + '-in'" fConnectorConnectableSide="left"></span>
+					<span class="graph-port graph-port-out" fConnector fConnectorType="source" [fConnectorId]="tool.id + '-out'" fConnectorConnectableSide="right"></span>
+					<div class="connector-panel connector-panel-in" fDragBlocker><button type="button" [title]="'Connect to ' + tool.id + ' input'" [attr.aria-label]="'Connect to ' + tool.id + ' input'"
+						[disabled]="!connectingFrom() || connectingFrom() === tool.id" (click)="$event.stopPropagation(); finishConnection(tool.id)">+</button></div>
+					<div class="connector-panel connector-panel-out" fDragBlocker><button type="button" [title]="'Start from ' + tool.id + ' output'" [attr.aria-label]="'Start from ' + tool.id + ' output'"
+						[class.active]="connectingFrom() === tool.id" (click)="$event.stopPropagation(); startConnection(tool.id)">+</button></div>
+					<div class="notebook-drag-handle" fDragHandle title="Drag text to image" aria-label="Drag text to image">Text to image</div>
+					<button type="button" class="node-close" fDragBlocker aria-label="Close text to image node" title="Close text to image node"
+						(click)="$event.stopPropagation(); closeTool(tool.id)">×</button>
+					<app-text-to-image fDragBlocker />
+					<div class="notebook-resize-handle" fResizeHandle fResizeHandleType="right-bottom"
+						title="Resize text to image" aria-label="Resize text to image"></div>
+				</div>
+			} @else if (tool.kind === 'code') {
+				<div class="code-generator-node" fNode [fNodeId]="tool.id" [fNodePosition]="tool.position"
+					(click)="selectNode(tool.id)" [class.selected-node]="selectedNode() === tool.id"
+					[class.connection-target]="connectingFrom() !== null && connectingFrom() !== tool.id">
+					<span class="graph-port graph-port-in" fConnector fConnectorType="target" [fConnectorId]="tool.id + '-in'" fConnectorConnectableSide="left"></span>
+					<span class="graph-port graph-port-out" fConnector fConnectorType="source" [fConnectorId]="tool.id + '-out'" fConnectorConnectableSide="right"></span>
+					<div class="connector-panel connector-panel-in" fDragBlocker><button type="button" [title]="'Connect to ' + tool.id + ' input'" [attr.aria-label]="'Connect to ' + tool.id + ' input'"
+						[disabled]="!connectingFrom() || connectingFrom() === tool.id" (click)="$event.stopPropagation(); finishConnection(tool.id)">+</button></div>
+					<div class="connector-panel connector-panel-out" fDragBlocker><button type="button" [title]="'Start from ' + tool.id + ' output'" [attr.aria-label]="'Start from ' + tool.id + ' output'"
+						[class.active]="connectingFrom() === tool.id" (click)="$event.stopPropagation(); startConnection(tool.id)">+</button></div>
+					<div class="notebook-drag-handle" fDragHandle title="Drag code generator" aria-label="Drag code generator">Code generator</div>
+					<button type="button" class="node-close" fDragBlocker aria-label="Close code generator node" title="Close code generator node"
+						(click)="$event.stopPropagation(); closeTool(tool.id)">×</button>
+					<app-code-generator fDragBlocker />
+					<div class="notebook-resize-handle" fResizeHandle fResizeHandleType="right-bottom"
+						title="Resize code generator" aria-label="Resize code generator"></div>
+				</div>
+			} @else {
+				<div class="data-table-node" fNode [fNodeId]="tool.id" [fNodePosition]="tool.position"
+					(click)="selectNode(tool.id)" [class.selected-node]="selectedNode() === tool.id"
+					[class.connection-target]="connectingFrom() !== null && connectingFrom() !== tool.id">
+					<span class="graph-port graph-port-in" fConnector fConnectorType="target" [fConnectorId]="tool.id + '-in'" fConnectorConnectableSide="left"></span>
+					<span class="graph-port graph-port-out" fConnector fConnectorType="source" [fConnectorId]="tool.id + '-out'" fConnectorConnectableSide="right"></span>
+					<div class="connector-panel connector-panel-in" fDragBlocker><button type="button" [title]="'Connect to ' + tool.id + ' input'" [attr.aria-label]="'Connect to ' + tool.id + ' input'"
+						[disabled]="!connectingFrom() || connectingFrom() === tool.id" (click)="$event.stopPropagation(); finishConnection(tool.id)">+</button></div>
+					<div class="connector-panel connector-panel-out" fDragBlocker><button type="button" [title]="'Start from ' + tool.id + ' output'" [attr.aria-label]="'Start from ' + tool.id + ' output'"
+						[class.active]="connectingFrom() === tool.id" (click)="$event.stopPropagation(); startConnection(tool.id)">+</button></div>
+					<div class="notebook-drag-handle" fDragHandle title="Drag data viewer" aria-label="Drag data viewer">Data viewer</div>
+					<button type="button" class="node-close" fDragBlocker aria-label="Close data viewer" title="Close data viewer"
+						(click)="$event.stopPropagation(); closeTool(tool.id)">×</button>
+					<app-data-table fDragBlocker />
+					<div class="notebook-resize-handle" fResizeHandle fResizeHandleType="right-bottom"
+						title="Resize data viewer" aria-label="Resize data viewer"></div>
+				</div>
+			}
+		}
+		</ng-container>
+
+		<ng-container ngProjectAs="[fNodes]">
+		@if (!closedInitialNodes().has('card')) {
+		<mat-card class="node-with-card" appearance="outlined" fNode [fNodePosition]="{ x: 24, y: 24 }" fDragHandle
+			fNodeInput fInputId="fInput1" fInputConnectableSide="left" fNodeOutput fOutputId="fOutput2"
+			fOutputConnectableSide="right" (click)="selectNode('card')"
+			[class.selected-node]="selectedNode() === 'card'" [class.connection-target]="connectingFrom() !== null && connectingFrom() !== 'card'">
+			<span class="graph-port graph-port-in" fConnector fConnectorType="target" fConnectorId="card-in" fConnectorConnectableSide="left"></span>
+			<span class="graph-port graph-port-out" fConnector fConnectorType="source" fConnectorId="card-out" fConnectorConnectableSide="right"></span>
+			<div class="connector-panel connector-panel-in" fDragBlocker><button type="button" title="Connect to card input" aria-label="Connect to card input"
+				[disabled]="!connectingFrom() || connectingFrom() === 'card'" (click)="$event.stopPropagation(); finishConnection('card')">+</button></div>
+			<div class="connector-panel connector-panel-out" fDragBlocker><button type="button" title="Start from card output" aria-label="Start from card output"
+				[class.active]="connectingFrom() === 'card'" (click)="$event.stopPropagation(); startConnection('card')">+</button></div>
+			<button type="button" class="node-close" fDragBlocker aria-label="Close card node" title="Close card node"
+				(click)="$event.stopPropagation(); closeInitialNode('card')">×</button>
+			<mat-card-header>
+				<div mat-card-avatar class="example-header-image"></div>
+				<mat-card-title>Shiba Inu</mat-card-title>
+				<mat-card-subtitle>Dog Breed</mat-card-subtitle>
+			</mat-card-header>
+			<img mat-card-image src="https://material.angular.io/assets/img/examples/shiba2.jpg"
+				alt="Photo of a Shiba Inu" />
+			<mat-card-content>
+				<p>
+					The Shiba Inu is the smallest of the six original and distinct spitz breeds of dog from
+					Japan. A small, agile dog that copes very well with mountainous terrain, the Shiba Inu was
+					originally bred for hunting.
+				</p>
+			</mat-card-content>
+			<mat-card-actions>
+				<button mat-button>LIKE</button>
+				<button mat-button>SHARE</button>
+			</mat-card-actions>
+		</mat-card>
+		}
+
+		@if (!closedInitialNodes().has('video')) {
+		<div class="simple-node video-node" fNode fDragHandle [fNodePosition]="{ x: 500, y: 200 }" fNodeInput fInputId="fInput2"
+			fInputConnectableSide="left" (click)="selectNode('video')"
+			[class.selected-node]="selectedNode() === 'video'" [class.connection-target]="connectingFrom() !== null && connectingFrom() !== 'video'">
+			<span class="graph-port graph-port-in" fConnector fConnectorType="target" fConnectorId="video-in" fConnectorConnectableSide="left"></span>
+			<span class="graph-port graph-port-out" fConnector fConnectorType="source" fConnectorId="video-out" fConnectorConnectableSide="right"></span>
+			<div class="connector-panel connector-panel-in" fDragBlocker><button type="button" title="Connect to video input" aria-label="Connect to video input"
+				[disabled]="!connectingFrom() || connectingFrom() === 'video'" (click)="$event.stopPropagation(); finishConnection('video')">+</button></div>
+			<div class="connector-panel connector-panel-out" fDragBlocker><button type="button" title="Start from video output" aria-label="Start from video output"
+				[class.active]="connectingFrom() === 'video'" (click)="$event.stopPropagation(); startConnection('video')">+</button></div>
+			<button type="button" class="node-close" fDragBlocker aria-label="Close video node" title="Close video node"
+				(click)="$event.stopPropagation(); closeInitialNode('video')">×</button>
+			<video width="320" height="240" controls autoplay muted>
+				<source src="./example.mov" type="video/mp4" />
+				Your browser does not support the video tag.
+			</video>
+		</div>
+		}
+		</ng-container>
+	</f-canvas>
+</f-flow>
+<aside class="component-palette" aria-label="Canvas components">
+	<h2>Components</h2>
+	<button type="button" (click)="addTool('terminal')"><span aria-hidden="true">&gt;_</span> Add terminal</button>
+	<button type="button" (click)="addTool('notebook')"><span aria-hidden="true">▦</span> Add notebook</button>
+	<button type="button" (click)="addTool('github')"><span aria-hidden="true">⌂</span> Add GitHub project</button>
+	<button type="button" (click)="addTool('ollama')"><span aria-hidden="true">◉</span> Add Ollama</button>
+	<button type="button" (click)="addTool('image')"><span aria-hidden="true">▧</span> Add text to image</button>
+	<button type="button" (click)="addTool('code')"><span aria-hidden="true">JS</span> Add code generator</button>
+	<button type="button" (click)="addTool('data')"><span aria-hidden="true">▤</span> Add data viewer</button>
+</aside>
+</div>

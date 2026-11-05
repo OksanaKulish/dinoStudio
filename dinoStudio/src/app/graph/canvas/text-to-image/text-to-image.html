@@ -1,0 +1,24 @@
+<header><strong>Text to image</strong><span class="device-status" role="status">Compute: {{ device() }}</span></header>
+<form (submit)="$event.preventDefault(); generate()">
+	<label for="image-prompt">Prompt</label>
+	<textarea id="image-prompt" #promptInput [value]="prompt()" (input)="prompt.set(promptInput.value)"
+		maxlength="500" rows="4" spellcheck="true"></textarea>
+	<button type="submit" [disabled]="generating() || !prompt().trim()">
+		{{ generating() ? 'Generating…' : 'Generate' }}
+	</button>
+</form>
+@if (generating()) {
+	<div class="generation-progress" role="status" aria-live="polite">
+		<span>{{ phase() }}@if (progress() !== null) { · {{ progress() }}% }</span>
+		<progress max="100" [attr.value]="progress()"></progress>
+	</div>
+}
+@if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+@if (imageUrl(); as url) {
+	<div class="image-preview">
+		<img [src]="url" [alt]="prompt()" />
+	</div>
+	<footer>
+		<a [href]="url" download="dino-studio-image.png">Download PNG</a>
+	</footer>
+}

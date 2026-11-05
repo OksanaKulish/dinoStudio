@@ -1,0 +1,23 @@
+<header><strong>GitHub project</strong></header>
+<form (submit)="$event.preventDefault(); load()">
+	<label for="github-url">Repository</label>
+	<div class="repo-input">
+		<input id="github-url" #repositoryUrl [value]="url()" (input)="url.set(repositoryUrl.value)"
+			placeholder="github.com/owner/repository" spellcheck="false" autocomplete="url" />
+		<button type="submit" [disabled]="loading() || !url().trim()">{{ loading() ? 'Loading…' : 'Load' }}</button>
+	</div>
+</form>
+@if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+@if (warning()) { <p class="warning" role="status">{{ warning() }}</p> }
+@if (repository(); as repo) {
+	<div class="repo-tree">
+		<strong>{{ repo.owner }}/{{ repo.name }}</strong>
+		<app-folder-tree [nodes]="nodes()" (fileOpened)="openFile($event)" />
+	</div>
+}
+@if (selectedFile()) {
+	<div class="file-preview">
+		<a [href]="fileUrl()" target="_blank" rel="noopener noreferrer">{{ selectedFile() }}</a>
+		@if (preview() !== null) { <pre>{{ preview() }}</pre> }
+	</div>
+}

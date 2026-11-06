@@ -1,0 +1,35 @@
+:host {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+	width: 100%;
+	color: #263d36;
+	font-size: 13px;
+}
+
+header, .actions { display: flex; align-items: center; gap: 6px; }
+header { justify-content: space-between; margin-bottom: 10px; }
+label { display: block; margin-bottom: 5px; }
+select, textarea {
+	box-sizing: border-box;
+	width: 100%;
+	padding: 7px;
+	border: 1px solid #aebdb4;
+	border-radius: 3px;
+	background: #fff;
+	color: inherit;
+	font: inherit;
+}
+button { padding: 5px 9px; border: 1px solid #80988b; border-radius: 3px; background: #e5eee7; color: inherit; cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; }
+header button { font-size: 17px; line-height: 1; }
+.messages { flex: 1; min-height: 80px; overflow: auto; margin: 10px 0; padding: 9px; border: 1px solid #cfddd2; background: #f7faf8; text-align: left; user-select: text; }
+.message { margin-bottom: 12px; }
+.message strong { color: #15583b; }
+.message.assistant strong { color: #855022; }
+.message p { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.error { margin: 4px 0 8px; color: #a12323; overflow-wrap: anywhere; }
+form { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+form label { align-self: flex-start; margin: 0; }
+textarea { resize: vertical; }

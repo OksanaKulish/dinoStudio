@@ -1,8 +1,0 @@
-severity,rule,detail,controller,action,service,method
-info,query_param_mismatch,Client sends ?pagesize= and the action declares pageSize (works: binding ignores case).,UsersController,GetUsers,UserApiService,GetUsers
-info,endpoint_without_frontend_call,POST /api/product/addproduct (ProductController.AddPost) is not called by any Angular service.,ProductController,AddPost,,
-warning,route_param_not_in_signature,"Route ""/api/users/{update}"" declares {update} but UpdateUser has no parameter named ""update""; PUT /api/users/anything would match too. If a literal segment was intended, write ""update"" without braces.",UsersController,UpdateUser,,
-warning,route_param_not_in_signature,"Route ""/api/users/{add}"" declares {add} but AddUser has no parameter named ""add""; POST /api/users/anything would match too. If a literal segment was intended, write ""add"" without braces.",UsersController,AddUser,,
-info,dto_without_ts_model,C# Login is used by the API but has no TypeScript model (the client uses an untyped object or never calls it).,,,,
-info,dto_without_ts_model,C# ProductVM is used by the API but has no TypeScript model (the client uses an untyped object or never calls it).,,,,
-info,dto_without_ts_model,C# Register is used by the API but has no TypeScript model (the client uses an untyped object or never calls it).,,,,

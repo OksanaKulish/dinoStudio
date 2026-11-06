@@ -1,0 +1,197 @@
+<section class="scraper-page">
+	<header class="page-heading">
+		<div>
+			<p class="eyebrow">LOCAL REPOSITORY ANALYSIS</p>
+			<h1>Scraper</h1>
+		</div>
+		<button mat-flat-button type="button" [disabled]="jobStatus()?.status !== 'completed'" (click)="download()">Download results</button>
+	</header>
+	<p class="privacy-note">Repository contents are sent only to the API URL configured for this app. The service does not execute repository code.</p>
+
+	<section class="project-panel" aria-label="Project source">
+		<div class="source-actions">
+			<div>
+				<button mat-stroked-button type="button" [disabled]="loading() || jobStatus()?.status === 'running'"
+					(click)="chooseFolder(fallbackInput)">Choose folder and upload ZIP</button>
+				<input #fallbackInput class="visually-hidden" type="file" webkitdirectory multiple
+					(change)="uploadFallback($event)" />
+				<button mat-stroked-button type="button" [disabled]="loading() || jobStatus()?.status === 'running'"
+					(click)="chooseFolder(filesInput)">Choose files and upload ZIP</button>
+				<input #filesInput class="visually-hidden" type="file" multiple (change)="uploadFallback($event)" />
+			</div>
+			<div class="project-name">
+				@if (selectedSource(); as source) {
+					<span>{{ source.kind === 'path' ? 'Selected path' : source.kind === 'files' ? 'Selected files' : 'Selected folder' }}: {{ source.path }}</span>
+					@if (source.kind === 'folder') { <small>Browser does not expose the full folder path.</small> }
+				}
+				@if (projectId()) {
+					<small>Registered project: {{ projectName() }}</small>
+				} @else if (!selectedSource()) {
+					<span>No project selected</span>
+				}
+			</div>
+		</div>
+		<form class="local-path" (submit)="$event.preventDefault(); registerLocalPath()">
+			<label for="local-project-path">Or register an allowed local folder path</label>
+			<div class="path-row">
+				<input #localPath id="local-project-path" type="text" placeholder="C:\Projects\my-repo"
+					[value]="localPathValue()" (input)="localPathValue.set(localPath.value)"
+					[disabled]="loading() || jobStatus()?.status === 'running'" />
+				<button mat-stroked-button type="submit" [disabled]="loading() || !localPathValue().trim()">Register path</button>
+			</div>
+		</form>
+	</section>
+
+	<details class="config-panel">
+		<summary>Analysis configuration</summary>
+		@if (config(); as cfg) {
+			<div class="config-grid">
+				<label>Ignore directories
+					<input #ignoreDirs [value]="cfg.ignore_dirs.join(', ')" (change)="updateList('ignore_dirs', ignoreDirs.value)" />
+				</label>
+				<label>Ignore file patterns
+					<input #ignorePatterns [value]="cfg.ignore_file_patterns.join(', ')" (change)="updateList('ignore_file_patterns', ignorePatterns.value)" />
+				</label>
+				<label>Allowed extensions
+					<input #extensions [value]="cfg.allowed_extensions.join(', ')" (change)="updateList('allowed_extensions', extensions.value)" />
+				</label>
+				<label>Test features
+					<input #features [value]="cfg.test_features.join(', ')" (change)="updateList('test_features', features.value)" />
+				</label>
+				<label>Mutation kinds
+					<input #mutations [value]="cfg.mutation_kinds.join(', ')" (change)="updateList('mutation_kinds', mutations.value)" />
+				</label>
+				<label>Tokenizer model
+					<input #tokenizer [value]="cfg.tokenizer_model" (change)="updateTokenizerModel(tokenizer.value)" />
+				</label>
+				<label>Maximum file bytes
+					<input #maxFileBytes type="number" min="1" [value]="cfg.max_file_bytes" (change)="updateNumber('max_file_bytes', maxFileBytes.value)" />
+				</label>
+				<label>Maximum tokens
+					<input #maxTokens type="number" min="1" [value]="cfg.max_tokens" (change)="updateNumber('max_tokens', maxTokens.value)" />
+				</label>
+				<label>Maximum mutations
+					<input #maxMutations type="number" min="0" [value]="cfg.max_mutations" (change)="updateNumber('max_mutations', maxMutations.value)" />
+				</label>
+				<label class="toggle"><input #useGit type="checkbox" [checked]="cfg.use_git" (change)="updateBoolean('use_git', useGit.checked)" /> Include Git history</label>
+				<label class="toggle"><input #pathHints type="checkbox" [checked]="cfg.include_path_hint" (change)="updateBoolean('include_path_hint', pathHints.checked)" /> Include target path hints</label>
+				<label class="wide">System message
+					<textarea #systemMessage rows="3" [value]="cfg.system_msg" (change)="updateSystemMessage(systemMessage.value)"></textarea>
+				</label>
+			</div>
+		}
+	</details>
+
+	<div class="run-row">
+		<button mat-flat-button type="button" [disabled]="!projectId() || loading() || jobStatus()?.status === 'running'"
+			(click)="startJob()">Run analysis</button>
+		@if (loading() && !preparingProject()) { <span role="status">Starting analysis…</span> }
+	</div>
+	@if (preparingProject()) {
+		<section class="preparation-progress" role="status" aria-live="polite">
+			<div class="progress-labels">
+				<strong>{{ preparationStage() }}</strong>
+				@if (preparationPercent() !== null) { <span>{{ preparationPercent() }}%</span> }
+			</div>
+			<mat-progress-bar
+				[mode]="preparationPercent() === null ? 'indeterminate' : 'determinate'"
+				[value]="preparationPercent() ?? 0"></mat-progress-bar>
+			@if (preparationStage() === 'Scanning folder') {
+				<p class="scan-detail">Browser folder scan; the API has not received a ZIP yet.</p>
+			}
+			@if (scanProgress(); as scan) {
+				@if (preparationStage() === 'Scanning folder' || preparationStage() === 'Scanning selected files') {
+					<p class="scan-detail">
+						@if (scan.totalFiles !== undefined) { {{ scan.processedFiles }} / {{ scan.totalFiles }} selected · }
+						{{ scan.files }} included · {{ scan.bytes }} bytes · {{ scan.path }}
+					</p>
+				}
+			}
+		</section>
+	}
+
+	@if (jobStatus(); as job) {
+		<section class="job-progress" aria-live="polite">
+			<div class="progress-labels"><strong>{{ job.stage }}</strong><span>{{ job.percent }}%</span></div>
+			<mat-progress-bar [mode]="job.status === 'running' ? 'determinate' : job.status === 'queued' ? 'indeterminate' : 'determinate'"
+				[value]="job.percent"></mat-progress-bar>
+		</section>
+	}
+	@if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+	@if (activity().length) {
+		<details class="activity-log" open>
+			<summary>Activity log</summary>
+			<ol reversed aria-live="polite">
+				@for (entry of activity(); track $index) {
+					<li><time>{{ entry.time }}</time> {{ entry.message }}</li>
+				}
+			</ol>
+		</details>
+	}
+
+	@if (jobStatus()?.results_ready) {
+		<mat-tab-group [selectedIndex]="activeTabIndex()" (selectedTabChange)="selectTab($event.index)">
+			@for (section of sections; track section.key) {
+				<mat-tab>
+					<ng-template mat-tab-label>
+						{{ section.label }}
+						<mat-icon class="tab-info" fontSet="material-symbols-outlined" tabindex="0"
+							[attr.aria-label]="section.label + ': ' + section.description"
+							[matTooltip]="section.description" matTooltipPosition="above">info</mat-icon>
+					</ng-template>
+					<div class="results-panel">
+						<div class="result-tools">
+							<label for="result-search">Search</label>
+							<input #resultSearch id="result-search" type="search" [value]="searchQuery()" (input)="updateSearch(resultSearch.value)" />
+						</div>
+						@if (activeSection() === 'issues') {
+							<div class="filters">
+								<label>Severity
+									<select #severity [value]="severityFilter()" (change)="severityFilter.set(severity.value)">
+										<option value="all">All</option><option value="error">Error</option>
+										<option value="warning">Warning</option><option value="info">Info</option>
+									</select>
+								</label>
+								<label>Rule contains
+									<input #ruleSearch [value]="ruleFilter()" (input)="ruleFilter.set(ruleSearch.value)" />
+								</label>
+							</div>
+						}
+						@if (loadingSection() === activeSection()) { <p role="status">Loading results…</p> }
+						@if (activePage(); as page) {
+							@if (visibleRows().length) {
+								<div class="table-scroll">
+									<table mat-table matSort [matSortActive]="sortColumn()" [matSortDirection]="sortDirection()"
+										(matSortChange)="changeSort($event)" [dataSource]="visibleRows()">
+										@for (column of columns(); track column) {
+											<ng-container [matColumnDef]="column">
+												<th mat-header-cell *matHeaderCellDef mat-sort-header>{{ column }}</th>
+												<td mat-cell *matCellDef="let row">{{ formatCell(row[column]) }}</td>
+											</ng-container>
+										}
+										<tr mat-header-row *matHeaderRowDef="columns()"></tr>
+										<tr mat-row *matRowDef="let row; columns: columns()" (click)="selectRow(row)"></tr>
+									</table>
+								</div>
+							} @else { <p class="empty">{{ emptyMessage() }}</p> }
+							<footer class="pagination">
+								<span>{{ page.total }} results · {{ page.total ? page.offset + 1 : 0 }}–{{ page.offset + page.items.length }}</span>
+								<div>
+									<button mat-button type="button" [disabled]="page.offset === 0 || loadingSection() !== null" (click)="previousPage()">Previous</button>
+									<button mat-button type="button" [disabled]="page.offset + page.items.length >= page.total || loadingSection() !== null" (click)="nextPage()">Next</button>
+								</div>
+							</footer>
+						}
+						@if (activeSection() === 'examples' && selectedExample(); as example) {
+							<section class="example-detail">
+								<h2>{{ formatCell(example['task_type']) }} · {{ formatCell(example['feature']) }}</h2>
+								<h3>Prompt</h3><pre>{{ formatCell(example['prompt']) }}</pre>
+								<h3>Response</h3><pre>{{ formatCell(example['response']) }}</pre>
+							</section>
+						}
+					</div>
+				</mat-tab>
+			}
+		</mat-tab-group>
+	}
+</section>

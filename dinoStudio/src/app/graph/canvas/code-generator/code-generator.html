@@ -1,0 +1,42 @@
+<header>
+    <strong>Code generator</strong>
+</header>
+<form (submit)="$event.preventDefault(); generate()">
+    <label for="code-model">Hugging Face model ID</label>
+    <input id="code-model" #modelInput [value]="model()" (input)="model.set(modelInput.value)"
+        [disabled]="busy()" maxlength="200" spellcheck="false" />
+    <label for="code-language">Language</label>
+    <select id="code-language" #languageSelect [value]="language()" [disabled]="busy()"
+        (change)="language.set(languageSelect.value)">
+        <option>TypeScript</option>
+        <option>JavaScript</option>
+        <option>Python</option>
+        <option>C#</option>
+        <option>HTML/CSS</option>
+        <option>SQL</option>
+    </select>
+    <label for="code-request">Request</label>
+    <textarea id="code-request" #requestInput [value]="prompt()" (input)="prompt.set(requestInput.value)"
+        maxlength="4000" rows="4" [disabled]="busy() || !model()"></textarea>
+    <button type="submit" [disabled]="busy() || !model() || !prompt().trim()">
+        {{ busy() ? 'Generating…' : 'Generate code' }}
+    </button>
+</form>
+@if (busy()) {
+<div class="generation-progress" role="status" aria-live="polite">
+    <span>{{ progressPhase() }}@if (progress() !== null) { · {{ progress() }}% }</span>
+    <progress max="100" [attr.value]="progress()"></progress>
+</div>
+}
+@if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+@if (generatedCode()) {
+<div class="code-result">
+    <div class="result-heading">
+        <strong>{{ language() }}</strong>
+        <span>{{ model() }} · {{ device() }}</span>
+        <button type="button" title="Copy generated code" (click)="copyCode()">{{ copied() ? 'Copied' : 'Copy'
+            }}</button>
+    </div>
+    <pre><code>{{ generatedCode() }}</code></pre>
+</div>
+}

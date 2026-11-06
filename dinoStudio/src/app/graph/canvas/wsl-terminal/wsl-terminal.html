@@ -1,0 +1,23 @@
+<header>
+	<strong>WSL terminal</strong>
+	<button type="button" title="Clear output" aria-label="Clear output" (click)="history.set([])">×</button>
+</header>
+<form (submit)="$event.preventDefault(); openFolder()">
+	<label for="wsl-folder">Windows folder path</label>
+	<div class="command-line">
+		<input id="wsl-folder" #folderInput [value]="folder()" (input)="folder.set(folderInput.value)"
+			placeholder="C:\Projects\my-folder" spellcheck="false" autocomplete="off" />
+		<button type="submit" [disabled]="busy() || !folder().trim()">Open</button>
+	</div>
+</form>
+<div class="output" role="log" aria-live="polite">
+	@for (line of history(); track $index) {
+		<pre>{{ line }}</pre>
+	}
+</div>
+<form class="command-line" (submit)="$event.preventDefault(); run()">
+	<label for="wsl-command">{{ cwd() || 'WSL' }} $</label>
+	<input id="wsl-command" #commandInput [value]="command()" (input)="command.set(commandInput.value)"
+		spellcheck="false" autocomplete="off" [disabled]="!cwd() || busy()" />
+	<button type="submit" [disabled]="!cwd() || busy() || !command().trim()">Run</button>
+</form>

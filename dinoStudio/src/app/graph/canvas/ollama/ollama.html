@@ -1,0 +1,30 @@
+<header>
+	<strong>Ollama</strong>
+	<div class="actions">
+		<button type="button" title="Refresh models" aria-label="Refresh models" [disabled]="loadingModels() || busy()"
+			(click)="refreshModels()">↻</button>
+		<button type="button" title="Clear conversation" aria-label="Clear conversation" [disabled]="busy() || !messages().length"
+			(click)="messages.set([])">×</button>
+	</div>
+</header>
+<label for="ollama-model">Model</label>
+<select id="ollama-model" #modelSelect [value]="model()" [disabled]="busy() || loadingModels()"
+	(change)="selectModel(modelSelect.value)">
+	@for (name of models(); track name) { <option [value]="name">{{ name }}</option> }
+</select>
+<div class="messages" role="log" aria-live="polite">
+	@for (message of messages(); track $index) {
+		<div class="message" [class.assistant]="message.role === 'assistant'">
+			<strong>{{ message.role === 'user' ? 'You' : model() }}</strong>
+			<p>{{ message.content }}</p>
+		</div>
+	}
+	@if (busy()) { <p>Generating…</p> }
+</div>
+@if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+<form (submit)="$event.preventDefault(); send()">
+	<label for="ollama-prompt">Prompt</label>
+	<textarea id="ollama-prompt" #promptInput [value]="prompt()" (input)="prompt.set(promptInput.value)"
+		[disabled]="busy() || !model()" rows="3"></textarea>
+	<button type="submit" [disabled]="busy() || !model() || !prompt().trim()">Send</button>
+</form>

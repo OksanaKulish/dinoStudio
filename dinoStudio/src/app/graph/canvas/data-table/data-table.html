@@ -1,0 +1,22 @@
+<header><strong>Data viewer</strong></header>
+<label for="data-file">Upload CSV, Excel, or JSON</label>
+<input id="data-file" type="file" accept=".csv,.xlsx,.json,text/csv,application/json" [disabled]="busy()"
+	(change)="upload($event)" />
+@if (busy()) { <p role="status">Reading with pandas…</p> }
+@if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+@if (result(); as data) {
+	<div class="table-meta">
+		<strong>{{ data.name }}</strong>
+		<span>{{ data.rowCount }} rows · {{ data.columns.length }} columns</span>
+	</div>
+	<div class="table-scroll">
+		<table>
+			<thead><tr>@for (column of data.columns; track $index) { <th>{{ column }}</th> }</tr></thead>
+			<tbody>
+				@for (row of data.rows; track $index) {
+					<tr>@for (value of row; track $index) { <td>{{ value ?? '' }}</td> }</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}

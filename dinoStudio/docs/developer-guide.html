@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DinoStudio | Developer guide</title>
+<style>
+  :root { --ink:#23362e; --green:#245c41; --muted:#597166; --line:#d5e0d9; --pale:#f0f5f1; --gold:#bd8740; }
+  * { box-sizing:border-box; }
+  body { margin:0; color:var(--ink); background:white; font:10.4pt/1.53 "Segoe UI", Aptos, sans-serif; }
+  article { max-width:860px; margin:auto; padding:32px 38px 55px; }
+  .cover { min-height:780px; display:flex; flex-direction:column; justify-content:space-between; border-top:7px solid var(--green); padding-top:45px; }
+  .eyebrow { color:var(--green); font-size:9pt; font-weight:700; letter-spacing:2px; text-transform:uppercase; }
+  h1, h2, h3 { font-family:Georgia, Cambria, serif; color:#183e2b; line-height:1.18; }
+  h1 { font-size:44pt; margin:22px 0 16px; }
+  h2 { font-size:20pt; margin:39px 0 12px; padding-top:8px; border-top:2px solid var(--green); }
+  h3 { font-size:13pt; margin:24px 0 9px; }
+  p { margin:0 0 11px; }
+  ul, ol { margin:7px 0 16px; padding-left:20px; }
+  li { margin:5px 0; }
+  a { color:var(--green); text-decoration:none; }
+  strong { font-weight:700; }
+  code, pre { font-family:Consolas, "Cascadia Code", monospace; }
+  code { font-size:9pt; background:#edf2ee; padding:1px 3px; border-radius:2px; overflow-wrap:anywhere; }
+  pre { margin:12px 0 18px; padding:12px 14px; background:#edf2ee; border-left:3px solid var(--green); font-size:8.6pt; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; }
+  table { width:100%; border-collapse:collapse; margin:12px 0 20px; font-size:9pt; }
+  th { text-align:left; color:#1e4631; background:#e9f1eb; border-bottom:2px solid #bad0c0; padding:8px; }
+  td { vertical-align:top; border-bottom:1px solid var(--line); padding:7px 8px; overflow-wrap:anywhere; }
+  tr:nth-child(even) td { background:#f9fbf9; }
+  .deck { max-width:640px; color:var(--muted); font:17pt/1.45 Georgia, Cambria, serif; }
+  .cover-bottom { border-top:1px solid var(--line); padding:18px 0 12px; font-size:9pt; color:var(--muted); }
+  .cover-bottom strong { color:var(--ink); }
+  .callout { padding:12px 15px; margin:14px 0 17px; border-left:4px solid var(--gold); background:#faf6ed; }
+  .callout.green { border-color:var(--green); background:var(--pale); }
+  .callout p:last-child { margin-bottom:0; }
+  .toc { columns:2; column-gap:38px; list-style:none; padding:0; }
+  .toc li { break-inside:avoid; padding:6px 0; border-bottom:1px solid var(--line); }
+  .diagram { border:1px solid var(--line); padding:17px 19px; margin:14px 0 20px; background:#f7faf8; }
+  .diagram pre { border:none; margin:0; padding:0; background:none; font-size:8.7pt; }
+  .small { color:var(--muted); font-size:8.7pt; }
+  .tag { display:inline-block; padding:2px 6px; margin-right:6px; color:#1f5036; background:#e4efe8; font-size:8pt; font-weight:700; }
+  .section-start { break-before:page; }
+  @page { size:A4; margin:16mm 17mm 18mm; }
+  @media print {
+    body { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    article { max-width:none; padding:0; }
+    .cover { min-height:245mm; }
+    h2, h3 { break-after:avoid; }
+    tr, .callout, .diagram, pre { break-inside:avoid; }
+    a { text-decoration:none; }
+  }
+</style>
+</head>
+<body>
+<article>
+  <div class="cover">
+    <div>
+      <div class="eyebrow">Engineering / local development</div>
+      <h1>DinoStudio<br>Developer Guide</h1>
+      <p class="deck">How to run the application, understand its service boundaries, analyze repositories, and prepare local model training.</p>
+    </div>
+    <div class="cover-bottom">
+      <p><strong>Audience</strong> Frontend, API, and local ML developers</p>
+      <p><strong>Scope</strong> Current workspace implementation as of November 2026</p>
+      <p><strong>Source of truth</strong> Project code and requirements files; this guide is not a GPU training validation report.</p>
+    </div>
+  </div>
+
+  <h2 id="contents">Contents</h2>
+  <ol class="toc">
+    <li><a href="#start">01 / Quick start</a></li>
+    <li><a href="#architecture">02 / Architecture and rationale</a></li>
+    <li><a href="#workflows">03 / How to use each view</a></li>
+    <li><a href="#data">04 / Scraper and training data flow</a></li>
+    <li><a href="#structure">05 / Project structure</a></li>
+    <li><a href="#dependencies">06 / Dependencies and configuration</a></li>
+    <li><a href="#api">07 / API map</a></li>
+    <li><a href="#extend">08 / Extending the codebase</a></li>
+    <li><a href="#troubleshooting">09 / Troubleshooting and limits</a></li>
+  </ol>
+
+  <section id="start" class="section-start">
+    <h2>01 / Quick start</h2>
+    <p>Run commands from the repository root on Windows PowerShell. Node.js/npm and Python 3.11+ are required for the scraper. The Angular app and the scraper are <strong>different processes</strong>. Training needs an additional compatible Python environment, but not a permanently running third server.</p>
+    <h3>Install dependencies once</h3>
+    <pre>npm install
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-scraper.txt</pre>
+    <p class="small">Use a supported installed Python version if <code>py -3.11</code> is unavailable. The Node service also uses <code>.venv</code> by default for its Python-backed tools; install the corresponding optional requirements only when needed.</p>
+    <h3>Terminal A: Angular + Node service</h3>
+    <pre>npm start</pre>
+    <p>The launcher chooses an available Angular port from 4300 to 4319 and prints the URL. It starts Angular and the local Node terminal/notebook service. Keep this terminal open. <strong>It does not start the scraper FastAPI service.</strong></p>
+    <h3>Terminal B: scraper + training API</h3>
+    <pre>$env:DINO_APP_PORT = "4300"             # replace with Terminal A's actual port
+$env:SCRAPER_ALLOWED_ROOTS = "C:\Projects;D:\Work"  # for local-path registration
+.\.venv\Scripts\python.exe -m scraper_api.run</pre>
+    <p>The API binds to <code>127.0.0.1</code> and prints its URL. It tries port 8000 and chooses the next available port if needed. Do not start multiple copies. The browser discovers the scraper API on ports 8000-8020.</p>
+    <pre>Invoke-RestMethod http://127.0.0.1:8001/api/health
+# Replace 8001 with the port printed by Terminal B.</pre>
+    <div class="callout green"><p><strong>Where to go.</strong> Open the URL printed by Terminal A: <code>/</code> is Canvas, <code>/scraper</code> is Repository scraper, and <code>/training</code> is Training. A scraper-only workflow needs Terminals A and B; the separate GPU Python is needed only for a training run.</p></div>
+    <h3>Optional: configure training before starting Terminal B</h3>
+    <pre>$env:TRAINING_PYTHON = "C:\venvs\dino-training\Scripts\python.exe"
+# Restart Terminal B after changing the variable.
+Invoke-RestMethod http://127.0.0.1:8001/api/training/preflight</pre>
+    <p><code>TRAINING_PYTHON</code> must be an absolute executable path in a <em>separate</em> CUDA-enabled environment, not the API's <code>.venv</code>. Preflight returns reasons when it is blocked. A 200 response does not imply <code>ready: true</code>. Existing scraper jobs are in memory and disappear when Terminal B restarts; downloaded results ZIPs remain usable.</p>
+  </section>
+
+  <section id="architecture" class="section-start">
+    <h2>02 / Architecture and rationale</h2>
+    <div class="diagram"><pre>Browser / Angular app  (localhost:4300-4319)
+  |  Canvas tools           |  Scraper + Training pages
+  v                         v
+Node local service           FastAPI scraper API  (127.0.0.1:8000-8020)
+(127.0.0.1:appPort+1*)      |  scan / parse / match / check / export
+  |                          |  in-memory jobs + ZIP artifacts
+  +-- WSL terminal           v
+  +-- notebook Python       runs/&lt;id&gt;/  +  TRAINING_PYTHON subprocess
+  +-- code/image Python                    |  Unsloth + TRL LoRA training
+  +-- local Ollama HTTP                    |  held-out evaluation + GGUF export
+                                           +-- lazy llama-cpp GGUF worker
+
+* Node service retries subsequent ports if its first port is busy.</pre></div>
+    <table><thead><tr><th>Boundary</th><th>Responsibility</th><th>Why separate?</th></tr></thead><tbody>
+      <tr><td>Angular</td><td>Canvas, file picking and ZIP creation, analysis tables, training controls, polling and SSE log display.</td><td>Responsive interaction; repository code is never executed by the scraper UI.</td></tr>
+      <tr><td>Node local service</td><td>Notebook sessions, WSL terminal, data viewer, code/image workers, Ollama requests.</td><td>Hosts the canvas tools and their short-lived processes independently of FastAPI.</td></tr>
+      <tr><td>FastAPI + scraper core</td><td>Restricted project intake, in-memory job lifecycle, local parsing/checking, export and artifact endpoints.</td><td>Core analysis is Python without importing training GPU libraries.</td></tr>
+      <tr><td>Separate training Python</td><td>Dataset validation when configured, CUDA/VRAM checks, LoRA worker, evaluation, GGUF export, llama-cpp generation.</td><td>Isolates Torch/Unsloth version constraints and expensive GPU work from API request handling.</td></tr>
+    </tbody></table>
+    <p>Node and FastAPI both have health endpoints, but they are not interchangeable. Angular's <code>local-api.ts</code> discovers Node on ports 4301-4320; <code>scraper-api.service.ts</code> discovers FastAPI on 8000-8020. FastAPI CORS must allow the Angular origin. Only one training/evaluation run uses the GPU at a time; cancelling terminates its process group.</p>
+  </section>
+
+  <section id="workflows" class="section-start">
+    <h2>03 / How to use each view</h2>
+    <h3>Canvas: compose local tools</h3>
+    <p>The canvas is built with Foblex Flow. Create and connect terminal, notebook, GitHub project, Ollama, text-to-image, code-generator, and data-table nodes. Folder tree is browser-side. The terminal node accepts an absolute Windows folder, translates it into WSL, and executes commands there; use only trusted folders and commands. Notebook execution runs selected Python code with the current user's permissions.</p>
+    <p>Node handlers enforce request size/time limits. Ollama requests go to local <code>127.0.0.1:11434</code>. Code and image model downloads are optional and separate from the scraper/training service. The data viewer uses pandas to read CSV/XLSX/JSON.</p>
+    <h3>Repository scraper: produce reviewable artifacts</h3>
+    <ol>
+      <li>Go to <code>/scraper</code>. Choose a folder (browser creates and uploads a ZIP), choose individual files, or register an allowed local path. For a path, configure <code>SCRAPER_ALLOWED_ROOTS</code> in Terminal B.</li>
+      <li>Adjust analysis config only when needed: ignored files, extensions, Git history, held-out test features, model tokenizer, token limit, task types and mutations.</li>
+      <li>Click <strong>Run analysis</strong>. Status and activity log show scanning, parsing, matching, checks, token counting, secret scan and export. Files, Endpoints, Calls, DTO pairs, Matches, Issues, Examples and Coverage are paged tables with search/sort.</li>
+      <li>Parsed tables become available before export finishes. <strong>Download results</strong> requires a successfully completed job; a failed export can still leave parsed tables visible.</li>
+    </ol>
+    <h3>Training: preview, run, evaluate, activate</h3>
+    <ol>
+      <li>At <code>/training</code>, choose a completed scraper job from the same API session or upload a <strong>Download results ZIP</strong>. A source-code ZIP is not training input.</li>
+      <li>Review model/LoRA config and preflight. <strong>Preview dataset</strong> checks the secret marker, exact chat schema, train/test feature separation, and real tokenizer lengths. The API interpreter can preview a locally cached tokenizer offline when no training Python is configured; this does not authorize training.</li>
+      <li>After preflight reports <code>ready: true</code> and preview passes, click <strong>Start training</strong>. Runs lists status and metrics. Run detail polls progress and streams loss/log events; cancel stops the subprocess tree. A dry run uses the configured 0.5B model for two steps.</li>
+      <li>Evaluate a completed adapter. The report compares base and fine-tuned outputs on the held-out split by task. Only a real run with GGUF and completed evaluation can be activated.</li>
+      <li>Use <strong>Try it</strong> with the active model. The same saved system message used for training is sent to the lazy local llama-cpp worker.</li>
+    </ol>
+    <div class="callout"><p><strong>No GPU environment yet?</strong> Scraper and tables still work. Training preflight remains blocked until a separate compatible CUDA Python is configured. GGUF conversion and the Unsloth/TRL/llama-cpp combination have not been verified on this Windows workspace; the repository has no pinned <code>requirements-training.txt</code>.</p></div>
+  </section>
+
+  <section id="data" class="section-start">
+    <h2>04 / Scraper and training data flow</h2>
+    <p>The scanner gathers allowed files; C# and TypeScript parsers produce classes, controllers, models and service calls. Match and check modules identify endpoint/call pairs, DTO pairs and issues. Task builders create chat examples; export performs real tokenizer counts and a secret scan before writing the ZIP.</p>
+    <div class="diagram"><pre>Repository / source ZIP
+  -&gt; scan -&gt; parse C#/TS -&gt; match + consistency checks
+  -&gt; task examples -&gt; tokenize + secret scan -&gt; results ZIP
+  -&gt; dataset validation + feature holdout -&gt; LoRA adapter
+  -&gt; held-out base-vs-tuned evaluation -&gt; GGUF + model card
+  -&gt; activate model -&gt; local chat generation</pre></div>
+    <p>The results ZIP contains <code>train.jsonl</code>, <code>test.jsonl</code>, <code>pairs_all.jsonl</code>, per-task <code>pairs_*.jsonl</code>, <code>chunks.jsonl</code>, <code>project_model.json</code>, <code>consistency_report.csv</code> and <code>manifest.json</code>. A JSONL row is chat-format:</p>
+    <pre>{"messages":[{"role":"system","content":"..."},
+             {"role":"user","content":"..."},
+             {"role":"assistant","content":"..."}],
+ "meta":{"id":"...","task_type":"dto_to_ts","feature":"...",
+         "source":"...","split":"train"}}</pre>
+    <p>A new successful export sets <code>manifest.secret_scan_passed: true</code>. The training loader rejects old ZIPs without a confirmed pass, secret-scan failures, malformed messages, duplicate IDs, feature leakage, or empty train/test splits. Rows over the configured sequence length are flagged and removed. Holdout is by <em>feature</em>, not random rows; two isolated service files may not provide enough train/test examples.</p>
+    <p>FastAPI keeps scraper jobs in memory; their ZIP downloads are lost on API restart. Training runs persist under ignored <code>runs/&lt;uuid&gt;/</code>: <code>dataset.zip</code>, <code>config.json</code>, <code>status.json</code>, <code>progress.jsonl</code>, <code>worker.log</code>, <code>metrics.json</code>, <code>adapter/</code>, and (for real runs) <code>gguf/</code> and <code>model_card.json</code>. Evaluation adds <code>eval_progress.jsonl</code>, <code>eval.log</code> and <code>eval_report.json</code>. Model downloads are bundled in that run directory.</p>
+  </section>
+
+  <section id="structure" class="section-start">
+    <h2>05 / Project structure</h2>
+    <pre>dinoStudio/
+  src/app/
+    app.routes.ts, app.html        application routes and navigation
+    graph/canvas/canvas/           Foblex graph and tool nodes
+    folder-tree/                   browser folder UI
+    local-api.ts                   Node local-service discovery
+    scraper/data-access/, ui/     ZIP preparation, API client, result tables
+    training/data-access/, ui/    typed training client, SSE, five views
+  scripts/
+    dev.mjs, terminal-server.mjs   Angular + Node launcher and API
+    notebook-session.py, ...      isolated notebook/data/model helpers
+  scraper_api/
+    run.py                        loopback port selection and Uvicorn
+    app/api/                      FastAPI routes, workspaces, job managers
+    app/core/                     scan, parse, match, checks, tasks, export
+    app/training/                 config, dataset, preflight, train, evaluate,
+                                  export, runner, registry, serve
+  runs/                           generated local training artifacts (ignored)
+  requirements-*.txt              optional Python dependency groups
+  clenupdata.ipynb                notebook specification for scraper + LoRA</pre>
+    <p>Keep parsing and scoring rules in <code>app/core/</code> and training work in <code>app/training/</code>; neither should depend on FastAPI request objects. HTTP validation, response codes and streaming belong in <code>app/api/main.py</code>. Angular service files own typed requests; page components own UI signals, not backend model execution.</p>
+  </section>
+
+  <section id="dependencies" class="section-start">
+    <h2>06 / Dependencies and configuration</h2>
+    <table><thead><tr><th>Layer</th><th>Key packages / prerequisites</th><th>Install / when needed</th></tr></thead><tbody>
+      <tr><td>Angular + Node</td><td>Angular 22, Material/CDK, Foblex Flow, RxJS, JSZip, PrimeNG, AJV; Node/npm.</td><td><code>npm install</code> once; <code>npm start</code> for the dev launcher.</td></tr>
+      <tr><td>Scraper Python</td><td>FastAPI, Uvicorn, Pydantic, python-multipart, pandas, Transformers.</td><td><code>pip install -r requirements-scraper.txt</code> into <code>.venv</code>.</td></tr>
+      <tr><td>Canvas Python</td><td>Notebook: nbclient, nbformat, ipykernel, pandas/openpyxl. Code: Torch, Transformers, Accelerate. Image: Torch, Diffusers, Pillow.</td><td>Install the relevant <code>requirements-notebook.txt</code>, <code>requirements-code.txt</code>, or <code>requirements-image.txt</code> only for tools used.</td></tr>
+      <tr><td>Training Python</td><td>Separate CUDA-capable environment; Torch, Unsloth, TRL, Datasets, PEFT, Accelerate, bitsandbytes, Transformers and llama-cpp-python.</td><td><code>TRAINING_PYTHON</code> absolute path. Compatible versions and GPU runtime remain unverified; no pinned training requirements file exists.</td></tr>
+      <tr><td>Optional external tools</td><td>WSL/Linux distribution for terminal node; Ollama and a local model for Ollama node; cached tokenizer/model files when operating offline.</td><td>Only needed when using that feature.</td></tr>
+    </tbody></table>
+    <table><thead><tr><th>Setting</th><th>Purpose</th></tr></thead><tbody>
+      <tr><td><code>DINO_APP_PORT</code>, <code>DINO_APP_ORIGINS</code></td><td>Angular origin(s) allowed by scraper FastAPI. Set the actual port from <code>npm start</code> before starting Python; origins override accepts a comma-separated list.</td></tr>
+      <tr><td><code>SCRAPER_API_PORT</code>, <code>SCRAPER_API_PORT_MAX</code></td><td>API's initial loopback port (default 8000) and end of port search range.</td></tr>
+      <tr><td><code>SCRAPER_ALLOWED_ROOTS</code>, <code>SCRAPER_STORAGE_DIR</code></td><td>Semicolon-separated Windows roots for local-path registration; ZIP extraction storage (otherwise OS temporary directory).</td></tr>
+      <tr><td><code>DINO_API_PORT</code>, <code>NOTEBOOK_PYTHON</code></td><td>Node service port (launched at app port + 1 initially) and optional interpreter for Node-backed Python helpers.</td></tr>
+      <tr><td><code>TRAINING_PYTHON</code></td><td>Absolute path to a separate interpreter; required for training, evaluation and GGUF generation. Preview may fall back to API Python for cached-tokenizer inspection only.</td></tr>
+      <tr><td><code>TRAINING_TIMEOUT_SECONDS</code>, <code>GENERATION_TIMEOUT_SECONDS</code></td><td>Worker limit (default 86400s) and inference limit (default 180s).</td></tr>
+    </tbody></table>
+  </section>
+
+  <section id="api" class="section-start">
+    <h2>07 / API map</h2>
+    <p>Node and FastAPI listen on loopback. FastAPI advertises OpenAPI at <code>/docs</code> and <code>/openapi.json</code>. Use the port printed by each process; the examples below omit its host prefix.</p>
+    <table><thead><tr><th>Service</th><th>Routes</th><th>Use</th></tr></thead><tbody>
+      <tr><td>Node local service</td><td><code>/api/health</code>, <code>/api/terminal/*</code>, <code>/api/notebook/*</code>, <code>/api/ollama/*</code>, <code>/api/dataframe/read</code>, <code>/api/image/*</code>, <code>/api/code/*</code></td><td>Canvas integrations. POST requests require <code>X-Dino-Terminal</code> and the allowed Angular origin.</td></tr>
+      <tr><td>FastAPI projects</td><td><code>POST /api/projects</code>, <code>POST /api/projects/local</code>, <code>GET /api/uploads/{id}</code></td><td>ZIP upload or allowed local path; poll ZIP validation/extraction.</td></tr>
+      <tr><td>FastAPI scraper jobs</td><td><code>POST/GET /api/jobs</code>, <code>GET /api/jobs/{id}</code>, <code>GET /api/jobs/{id}/{section}</code>, <code>GET /api/jobs/{id}/download</code></td><td>Start, poll, search/sort/paginate sections, download completed export.</td></tr>
+      <tr><td>Training setup</td><td><code>GET /api/training/config/default</code>, <code>GET /api/training/preflight</code>, <code>POST /api/training/preview</code></td><td>Defaults, package/CUDA/VRAM gate and tokenizer-backed ZIP preview.</td></tr>
+      <tr><td>Training lifecycle</td><td><code>POST/GET /api/training/runs</code>, <code>GET/DELETE /api/training/runs/{id}</code>, <code>GET /api/training/runs/{id}/logs</code>, <code>POST /api/training/runs/{id}/cancel</code></td><td>Subprocess run, persisted status, SSE progress/logs, cancel and cleanup.</td></tr>
+      <tr><td>Models</td><td><code>POST /api/training/runs/{id}/evaluate</code>, <code>GET .../{id}/eval</code>, <code>GET .../{id}/download</code>, <code>POST .../{id}/activate</code>, <code>GET /api/training/models</code>, <code>GET /api/training/models/active</code>, <code>POST /api/generate</code></td><td>Held-out comparison, GGUF packaging, model activation and chat inference.</td></tr>
+    </tbody></table>
+    <p class="small">Training run creation accepts JSON with a completed scraper <code>job_id</code> plus config, or multipart <code>file</code> and JSON-string <code>config</code>. Run status carries separate <code>status</code> and <code>eval_status</code>. SSE uses <code>progress</code>, <code>log</code>, <code>evaluation</code> and <code>eval_log</code> event names.</p>
+  </section>
+
+  <section id="extend" class="section-start">
+    <h2>08 / Extending the codebase</h2>
+    <ol>
+      <li><strong>Add a frontend feature:</strong> place a standalone Angular component and styles under the owning <code>src/app/</code> feature; define a typed data-access service; register a route in <code>app.routes.ts</code> and a link in <code>app.html</code>. Follow signals, OnPush and existing Material/Foblex patterns.</li>
+      <li><strong>Add a scraper rule or task:</strong> extend parsers, match/check helpers or <code>core/tasks/</code>, keep model records in <code>core/models.py</code>, and update export and result sections as needed. The scraper must analyze text without executing uploaded repository code.</li>
+      <li><strong>Add an API contract:</strong> validate HTTP input and response in <code>app/api/</code>, keep file work restricted and bounded, and keep pure analysis/training logic outside FastAPI modules.</li>
+      <li><strong>Change training:</strong> preserve run-local paths, separate interpreter and preflight gate. Save exact config, dataset hash and dependency versions in the model card; do not activate a dry run or an unevaluated adapter.</li>
+    </ol>
+    <p>Use <code>npx ngc -p tsconfig.app.json --noEmit</code> for an Angular compile check. <code>npm run build</code> is the production bundle; font fetching and configured size budgets may fail independently of TypeScript correctness. The repository also contains test files, but no tests or model runs were executed to produce this guide.</p>
+  </section>
+
+  <section id="troubleshooting" class="section-start">
+    <h2>09 / Troubleshooting and known limits</h2>
+    <table><thead><tr><th>Symptom</th><th>Cause / action</th></tr></thead><tbody>
+      <tr><td>Scraper API unavailable or CORS error</td><td>Confirm Terminal B is running; inspect its printed port and <code>/api/health</code>. Set <code>DINO_APP_PORT</code> to the actual Angular port before restarting. Avoid duplicate API processes.</td></tr>
+      <tr><td>ZIP is still scanning or uploading</td><td>Folder enumeration/compression happens in the browser first. Activity log shows file counts, API discovery and upload/extraction; Python has no request to log until the ZIP is sent.</td></tr>
+      <tr><td>Endpoints or DTO pairs are empty</td><td>Endpoints need C# controller actions with HTTP-verb attributes. DTO pairs need C# DTO classes and matching TypeScript models; service files alone do not satisfy either rule.</td></tr>
+      <tr><td>Training preview returns 422</td><td>Use the <strong>Download results</strong> ZIP from a newly completed scraper job, not the uploaded source ZIP. A successful export must include <code>manifest.secret_scan_passed: true</code>; do not add it manually.</td></tr>
+      <tr><td>Tokenizer cannot load during preview</td><td>The selected model's exact tokenizer is missing or unavailable. API-Python fallback looks for a cached snapshot offline. This workspace has a cached 0.5B dry-run tokenizer, not necessarily the default 7B tokenizer. Select dry run for its actual tokenizer, or provide/cache the configured 7B tokenizer.</td></tr>
+      <tr><td>Preflight returned 200 but Start is disabled</td><td>Inspect JSON <code>ready</code> and <code>reasons</code>. Missing <code>TRAINING_PYTHON</code>, CUDA, VRAM or packages blocks training even though the endpoint responded successfully.</td></tr>
+      <tr><td>Active model returns 404</td><td>Normal before a real GGUF-producing run completes evaluation and is activated. Dry runs cannot be activated.</td></tr>
+      <tr><td>Jobs disappear after restarting FastAPI</td><td>Scraper workspaces and jobs are in memory. Re-register and rerun, or use a previously downloaded results ZIP. Training run folders under <code>runs/</code> persist.</td></tr>
+      <tr><td>Model export or inference fails</td><td>Check <code>runs/&lt;id&gt;/worker.log</code> or <code>serve.log</code>. The GPU dependency combination and Unsloth GGUF converter availability are not verified; model conversion may attempt external tooling downloads, which is not acceptable under a strict offline policy until reviewed.</td></tr>
+    </tbody></table>
+    <div class="callout"><p><strong>Trust boundary.</strong> The scraper restricts ZIP traversal, symlinks, size and local-path roots; it does not execute repository code. By contrast, the Canvas terminal and notebook nodes intentionally execute user-selected commands/code. Generated training datasets and models can contain source material; keep <code>runs/</code> and downloaded artifacts private. Confirm network policy and package compatibility before production GPU work.</p></div>
+    <p class="small">Guide source: <code>docs/developer-guide.html</code>. Portable PDF: <code>docs/developer-guide.pdf</code>. Project implementation, printed ports and runtime error details remain authoritative if they differ from a static guide.</p>
+  </section>
+</article>
+</body>
+</html>

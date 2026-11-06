@@ -1,0 +1,16 @@
+<ul>
+    @for (n of nodes(); track n.path) {
+    <li>
+        @if (n.kind === 'directory') {
+        <button type="button" class="row dir" [attr.aria-expanded]="!closed().has(n.path)" (click)="toggle(n.path)">
+            {{ closed().has(n.path) ? '📁' : '📂' }} {{ n.name }}
+        </button>
+        @if (!closed().has(n.path) && n.children?.length) {
+        <app-folder-tree [nodes]="n.children!" (fileOpened)="fileOpened.emit($event)" />
+        }
+        } @else {
+        <button type="button" class="row file" (click)="fileOpened.emit(n)">📄 {{ n.name }}</button>
+        }
+    </li>
+    }
+</ul>

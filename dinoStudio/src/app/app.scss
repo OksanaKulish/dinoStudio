@@ -1,0 +1,13 @@
+.app-shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+.app-header { display: flex; align-items: center; gap: 28px; min-height: 48px; padding: 0 18px; border-bottom: 1px solid #d5ded8; background: #f7faf8; }
+.brand { color: #183728; font-size: 15px; font-weight: 650; text-decoration: none; }
+nav { display: flex; align-self: stretch; gap: 18px; }
+nav a { display: flex; align-items: center; border-bottom: 2px solid transparent; color: #53675b; font-size: 13px; text-decoration: none; }
+nav a.active { border-bottom-color: #228559; color: #183728; }
+.app-content { flex: 1; min-height: 0; }
+
+@media (max-width: 600px) {
+	.app-header { gap: 12px; padding: 0 12px; }
+	nav { gap: 10px; overflow-x: auto; }
+	nav a { flex: 0 0 auto; white-space: nowrap; font-size: 12px; }
+}

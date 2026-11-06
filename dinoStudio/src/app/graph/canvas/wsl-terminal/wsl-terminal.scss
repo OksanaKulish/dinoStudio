@@ -1,0 +1,62 @@
+:host {
+	display: block;
+	width: 100%;
+	font: 13px Consolas, monospace;
+	color: #e7f3eb;
+}
+
+header, .command-line {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+header {
+	justify-content: space-between;
+	margin-bottom: 12px;
+}
+
+form:first-of-type label { display: block; margin-bottom: 6px; }
+form:last-of-type { margin-top: 10px; }
+
+input {
+	min-width: 0;
+	flex: 1;
+	padding: 7px;
+	border: 1px solid #718b7b;
+	border-radius: 3px;
+	background: #10251c;
+	color: inherit;
+	font: inherit;
+}
+
+button {
+	flex: none;
+	border: 1px solid #8faa92;
+	border-radius: 3px;
+	background: #2d5640;
+	color: inherit;
+	padding: 7px 10px;
+	cursor: pointer;
+}
+
+button:disabled { opacity: .5; cursor: default; }
+header button { padding: 1px 6px; }
+
+.output {
+	min-height: 120px;
+	max-height: 220px;
+	overflow: auto;
+	margin-top: 12px;
+	padding: 8px;
+	background: #10251c;
+	text-align: left;
+	user-select: text;
+}
+
+pre {
+	margin: 0 0 8px;
+	font: inherit;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}

@@ -1,0 +1,21 @@
+:host {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	min-height: 0;
+	font-size: 13px;
+	color: #263d36;
+}
+
+header { margin-bottom: 12px; }
+label { display: block; margin-bottom: 5px; }
+.repo-input { display: flex; gap: 6px; }
+input { min-width: 0; flex: 1; padding: 6px; border: 1px solid #aebdb4; border-radius: 3px; }
+button { padding: 6px 9px; border: 1px solid #80988b; border-radius: 3px; background: #e5eee7; cursor: pointer; }
+button:disabled { opacity: .6; cursor: default; }
+.repo-tree, .file-preview { min-height: 0; max-height: 260px; overflow: auto; margin-top: 12px; padding: 8px; border: 1px solid #cfddd2; text-align: left; }
+.repo-tree { flex: 1; }
+.file-preview a { overflow-wrap: anywhere; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.error { color: #a12323; }
+.warning { color: #795a0c; }

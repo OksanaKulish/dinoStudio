@@ -1,0 +1,50 @@
+<header>
+	<strong>{{ name() }}</strong>
+	<div class="actions">
+		<button type="button" title="Open notebook" [disabled]="running()" (click)="fileInput.click()">Open .ipynb</button>
+		<button type="button" title="Run notebook" [disabled]="running()" (click)="run()">{{ running() ? 'Running…' : 'Run all' }}</button>
+	</div>
+</header>
+<input #fileInput type="file" hidden accept=".ipynb,application/json" (change)="open($event)" />
+<div class="cells">
+	@for (cell of notebook().cells; track $index; let index = $index) {
+		<section>
+			@if (cell.cell_type === 'code') {
+				<div class="cell-heading">
+					<span>In [{{ executionCounts()[index] ?? ' ' }}]</span>
+					<button type="button" [title]="'Run cell ' + (index + 1)" [disabled]="running()" (click)="runCell(index)">
+						{{ runningCell() === index ? 'Running…' : 'Run cell' }}
+					</button>
+				</div>
+			}
+			@if (cell.cell_type === 'code' || cell.cell_type === 'markdown') {
+				<label [for]="'cell-' + index">{{ cell.cell_type === 'code' ? 'Python' : 'Markdown' }} · {{ index + 1 }}</label>
+				<textarea [id]="'cell-' + index" #editor [value]="source(cell)" (input)="edit(index, editor.value)"
+					spellcheck="false" [disabled]="running()" [rows]="cell.cell_type === 'code' ? 8 : 4"></textarea>
+			} @else {
+				<pre>{{ source(cell) }}</pre>
+			}
+			@for (output of results()[index] ?? []; track $index) {
+				@if (asTable(output); as table) {
+					<div class="table-scroll"><table>
+						<thead><tr>@for (heading of table.headers; track $index) { <th>{{ heading }}</th> }</tr></thead>
+						<tbody>@for (row of table.rows; track $index) {
+							<tr>@for (value of row; track $index) { <td>{{ value }}</td> }</tr>
+						}</tbody>
+					</table></div>
+				} @else if (output.text) {
+					<pre class="output">{{ output.text }}</pre>
+				}
+			}
+		</section>
+	}
+</div>
+<div class="cell-actions">
+	<label for="new-cell-kind">Cell type</label>
+	<select id="new-cell-kind" #cellKind>
+		<option value="code">Python</option>
+		<option value="markdown">Markdown</option>
+	</select>
+	<button type="button" title="Add cell" [disabled]="running()" (click)="addCell(cellKind.value === 'markdown' ? 'markdown' : 'code')">Add cell</button>
+</div>
+@if (error()) { <p class="error" role="alert">{{ error() }}</p> }
